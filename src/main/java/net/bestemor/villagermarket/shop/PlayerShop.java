@@ -7,6 +7,7 @@ import net.bestemor.villagermarket.VMPlugin;
 import net.bestemor.villagermarket.event.AbandonShopEvent;
 import net.bestemor.villagermarket.menu.BuyShopMenu;
 import net.bestemor.villagermarket.menu.StorageHolder;
+import net.bestemor.villagermarket.utils.EconomyUtils;
 import net.bestemor.villagermarket.utils.VMUtils;
 import net.citizensnpcs.api.CitizensAPI;
 import net.milkbowl.vault.economy.Economy;
@@ -118,10 +119,16 @@ public class PlayerShop extends VillagerShop {
         } else {
             BigDecimal tax = BigDecimal.valueOf(ConfigManager.getDouble("tax"));
             BigDecimal taxAmount = tax.divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP).multiply(price);
+            boolean taxEnabled = tax.doubleValue() > 0;
 
             depositOwner(price.subtract(taxAmount));
             economy.withdrawPlayer(player, shopItem.getSellPrice().doubleValue());
             shopStats.addEarned(price.doubleValue());
+
+            // Deposit tax to server
+            if (taxEnabled && EconomyUtils.enableServerAccount()) {
+                EconomyUtils.depositServer(economy, taxAmount.doubleValue());
+            }
 
             if (owner.isOnline() && owner.getPlayer() != null) {
                 Player ownerOnline = owner.getPlayer();
@@ -137,7 +144,7 @@ public class PlayerShop extends VillagerShop {
                 }
                 ownerOnline.sendMessage(builder.build());
 
-                if (taxAmount.doubleValue() > 0) {
+                if (taxEnabled) {
                     BigDecimal t = new BigDecimal(String.valueOf(taxAmount));
                     ownerOnline.sendMessage(ConfigManager.getCurrencyBuilder("messages.tax").replaceCurrency("%tax%", t).addPrefix().build());
                 }
@@ -198,6 +205,11 @@ public class PlayerShop extends VillagerShop {
         
         if (taxAmount.doubleValue() > 0) {
             player.sendMessage(ConfigManager.getCurrencyBuilder("messages.tax").replaceCurrency("%tax%", taxAmount).addPrefix().build());
+
+            // Deposit taxes to server
+            if (EconomyUtils.enableServerAccount()) {
+                EconomyUtils.depositServer(economy, taxAmount.doubleValue());
+            }
         }
 
         economy.withdrawPlayer(owner, price.doubleValue());

@@ -14,6 +14,13 @@ enable_redstone_output: false
 redstone_update_interval: 20
 #How much (%) should be taken as tax?
 tax: 0
+#Whether to deposit money that gets deleted (taxes & admin shop sales) into the server account
+deposit_deleted_money_to_server: false
+#The server account taxes and admin shop sales should go into
+#This should be a unique server account name (ex: my-servers-bank)
+# Alternatively you can put an actual player name here
+#This uses vault to create a server account (viewable with /bal <server_account_name>)
+server_account_name: ""
 #Currency symbol
 currency: "$"
 #Should the currency symbol be placed before worth?

@@ -120,6 +120,7 @@ messages:
   bought_item_as_customer: "&7You bought &b%amount%x %item%&7 for &a%price%&7 from &r%shop%."
   #Placeholders: %amount%, %item%, %price%, %shop%
   sold_item_as_customer: "&7You sold &b%amount%x %item%&7 for &a%price%&7 to &r%shop%."
+  charged_taxes: "&7You were charged &c%perc% (%amt%)&7 for taxes."
   type_discount: "&bPlease type the discount (0-100) in the chat..."
   type_time: "&bPlease type the time (2h, 1d, etc.) in the chat..."
   not_valid_time: "&cNot a valid time! Time must start with a number and end with h, d, or m."

@@ -3,13 +3,16 @@ package net.bestemor.villagermarket.shop;
 import net.bestemor.core.config.ConfigManager;
 import net.bestemor.core.config.CurrencyBuilder;
 import net.bestemor.villagermarket.VMPlugin;
+import net.bestemor.villagermarket.utils.EconomyUtils;
 import net.milkbowl.vault.economy.Economy;
+import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.Bukkit;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Date;
 
 public class AdminShop extends VillagerShop {
@@ -48,7 +51,17 @@ public class AdminShop extends VillagerShop {
         if (shopItem.isItemTrade()) {
             removeItems(player.getInventory(), shopItem.getItemTrade(), shopItem.getItemTradeAmount());
         } else {
-            economy.withdrawPlayer(player, price.doubleValue());
+            EconomyResponse ecoResponse = economy.withdrawPlayer(player, price.doubleValue());
+
+            if (!ecoResponse.transactionSuccess()) {
+                return;
+            }
+
+            // Deposit sale price to server
+            if (EconomyUtils.enableServerAccount()) {
+                EconomyUtils.depositServer(economy, price.doubleValue());
+            }
+
             BigDecimal left = BigDecimal.valueOf(economy.getBalance(player));
             player.sendMessage(ConfigManager.getCurrencyBuilder("messages.money_left").replaceCurrency("%amount%", left).addPrefix().build());
             shopStats.addEarned(price.doubleValue());
@@ -84,13 +97,25 @@ public class AdminShop extends VillagerShop {
                 .replace("%item%", shopItem.getItemName())
                 .replace("%shop%", getShopName()).build());
 
+        BigDecimal tax = BigDecimal.valueOf(ConfigManager.getDouble("tax"));
+        BigDecimal taxAmount = tax.divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP).multiply(price);
+
+        // Deposit taxes to server
+        if (tax.doubleValue() > 0) {
+            player.sendMessage(ConfigManager.getCurrencyBuilder("messages.tax").replaceCurrency("%tax%", taxAmount).addPrefix().build());
+
+            if (EconomyUtils.enableServerAccount()) {
+                EconomyUtils.depositServer(economy, taxAmount.doubleValue());
+                price = price.subtract(taxAmount);
+            }
+        }
+
         economy.depositPlayer(player, price.doubleValue());
         removeItems(player.getInventory(), shopItem.getRawItem(), shopItem.getAmount());
         shopItem.incrementPlayerTrades(player);
         shopItem.incrementServerTrades();
         shopStats.addBought(amount);
         shopStats.addSpent(price.doubleValue());
-
 
         player.playSound(player.getLocation(), ConfigManager.getSound("sounds.sell_item"), 0.5f, 1);
 
